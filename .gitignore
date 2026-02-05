@@ -8,3 +8,6 @@ __pycache__/
 
 # Curl files
 curl.txt
+
+# Incident Flows folder
+Incident-Flows/

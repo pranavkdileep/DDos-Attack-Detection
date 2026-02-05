@@ -8,8 +8,10 @@ import os
 import uuid
 import db
 import math
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 # ======================
 # Load artifacts
@@ -243,28 +245,8 @@ def report_incident():
     return jsonify({"status": "ok", "file": save_path, "incident_id": incident_id}), 201
 
 
-@app.route("/batchProcess", methods=["POST"])
-def batch_process():
-    # Accept JSON body: {"incident_id": "...", "username": "...", "password": "..."}
-    body = request.get_json()
-    if not body:
-        return jsonify({"error": "Expected JSON body"}), 400
-
-    incident_id = body.get("incident_id") or body.get("incidentId")
-    username = body.get("username")
-    password = body.get("password")
-
-    if not incident_id or not username or not password:
-        return jsonify({"error": "Missing required fields: incident_id, username, password"}), 400
-
-    # authenticate
-    try:
-        if not db.validate_user(username, password):
-            return jsonify({"error": "Invalid credentials"}), 401
-    except Exception as e:
-        return jsonify({"error": "Auth error", "details": str(e)}), 500
-
-    # fetch incident
+@app.route("/api/incidents/<incident_id>/ai-predict", methods=["POST"])
+def batch_process(incident_id):
     try:
         incident = db.get_incident(incident_id)
     except Exception as e:
@@ -325,12 +307,149 @@ def batch_process():
 
     # mark analyzed
     try:
-        report = f"Batch processed: {len(df)} rows"
+        report = f"Batch processed: {len(new_X)} rows"
         db.mark_analyzed(incident_id, report=report)
     except Exception as e:
         return jsonify({"error": "Failed to update incident status", "details": str(e)}), 500
 
-    return jsonify({"status": "ok", "file": file_path, "rows": len(df)}), 200
+    return jsonify({"status": "ok", "file": file_path, "rows": len(new_X)}), 200
+
+
+# ======================
+# New Dashboard API Routes
+# ======================
+
+@app.route("/api/auth/login", methods=["POST"])
+def api_login():
+    data = request.get_json()
+    username = data.get("username")
+    password = data.get("password")
+    if db.validate_user(username, password):
+        token = f"mock-token-{uuid.uuid4()}"
+        return jsonify({"user": username, "token": token})
+    return jsonify({"error": "Invalid credentials"}), 401
+
+@app.route("/api/incidents", methods=["GET"])
+def api_get_incidents():
+    try:
+        page = int(request.args.get("page", 1))
+        page_size = int(request.args.get("pageSize", 10))
+        
+        data, total = db.get_incidents_paginated(page, page_size)
+        
+        # Map fields to match frontend interface
+        results = []
+        for row in data:
+            results.append({
+                "incident_id": row.get("incident_id"),
+                "time": "Just now", 
+                "title": row.get("name"),
+                "serverip": row.get("serverip"),
+                "networkinterface": row.get("networkinterface"),
+                "severity": row.get("risklevel"),
+                "isAnalysed": row.get("isanalysed", False)
+            })
+            
+        return jsonify({
+            "data": results,
+            "total": total,
+            "page": page,
+            "pageSize": page_size,
+            "totalPages": math.ceil(total / page_size)
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/incidents/<incident_id>/traffic", methods=["GET"])
+def api_get_traffic(incident_id):
+    try:
+        page = int(request.args.get("page", 1))
+        page_size = int(request.args.get("pageSize", 10))
+        
+        incident = db.get_incident(incident_id)
+        if not incident:
+            return jsonify({"error": "Incident not found"}), 404
+            
+        fname = incident.get("trafficflowfilebobid")
+        if not fname:
+            return jsonify({"data": [], "total": 0, "page": page, "pageSize": page_size, "totalPages": 0})
+            
+        flows_dir = os.path.join(os.getcwd(), "Incident-Flows")
+        file_path = os.path.join(flows_dir, fname)
+        
+        if not os.path.exists(file_path):
+            return jsonify({"error": "Flow file not found"}), 404
+            
+        # Read CSV logic
+        df = pd.read_csv(file_path)
+        
+        # 1. Normalize columns (strip spaces)
+        df.columns = df.columns.str.strip()
+
+        # Replace Infinite values with NaN and then fill with 0
+        df.replace([np.inf, -np.inf], np.nan, inplace=True)
+        df.fillna(0, inplace=True)
+        
+        # 2. Rename known columns to match frontend TrafficData
+        rename_map = {
+            "Flow ID": "flow_id",
+            "Source IP": "src_ip",
+            "Source Port": "src_port",
+            "Destination IP": "dst_ip",
+            "Destination Port": "dst_port",
+            "Protocol": "protocol",
+            "Timestamp": "timestamp",
+            "Label": "label"
+        }
+        df.rename(columns=rename_map, inplace=True)
+        
+        # 3. Lowercase remaining ones
+        df.rename(columns=lambda x: x.lower().replace(' ', '_').replace('/', '_'), inplace=True)
+        
+        total = len(df)
+        start = (page - 1) * page_size
+        end = start + page_size
+        
+        if start >= total:
+            page_data = []
+        else:
+            # fillna to avoid NaN in JSON
+            page_data = df.iloc[start:end].fillna("").to_dict(orient="records")
+            
+        return jsonify({
+            "data": page_data,
+            "total": total,
+            "page": page,
+            "pageSize": page_size,
+            "totalPages": math.ceil(total / page_size)
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/incidents/<incident_id>/report", methods=["GET", "POST"])
+def api_incident_report(incident_id):
+    if request.method == "POST":
+        data = request.get_json()
+        content = data.get("content", "")
+        db.update_report(incident_id, content)
+        return jsonify({"status": "ok"})
+    else:
+        incident = db.get_incident(incident_id)
+        if not incident:
+            return jsonify({"error": "Incident not found"}), 404
+        return jsonify({
+            "incident_id": incident_id,
+            "content": incident.get("incident_report") or ""
+        })
+
+
+
+@app.route("/api/incidents/<incident_id>/auto-report", methods=["POST"])
+def api_auto_report(incident_id):
+    # Mimic report generation
+    report = f"# AI Analysis Report: {incident_id}\n\n## Summary\nAutomated analysis detected anomalies.\n\n## Details\n- High risk traffic observed.\n- Recommended blocking source IPs."
+    return jsonify(report)
 
 # ======================
 if __name__ == "__main__":

@@ -107,3 +107,60 @@ def mark_analyzed(incident_id, report=None):
             conn.close()
         except Exception:
             pass
+
+
+def get_incidents_paginated(page, page_size):
+    conn = get_conn()
+    cur = None
+    try:
+        limit = page_size
+        offset = (page - 1) * page_size
+        
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Get total count
+        cur.execute("SELECT COUNT(*) as count FROM incident")
+        total_row = cur.fetchone()
+        total = total_row['count'] if total_row else 0
+        
+        # Get paginated data
+        cur.execute(
+            "SELECT * FROM incident ORDER BY incident_id DESC LIMIT %s OFFSET %s",
+            (limit, offset)
+        )
+        data = cur.fetchall()
+        
+        return data, total
+    finally:
+        if cur is not None:
+            try:
+                cur.close()
+            except Exception:
+                pass
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+def update_report(incident_id, report_content):
+    conn = get_conn()
+    cur = None
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE incident SET incident_report = %s WHERE incident_id = %s",
+            (report_content, incident_id)
+        )
+        conn.commit()
+    finally:
+        if cur is not None:
+            try:
+                cur.close()
+            except Exception:
+                pass
+        try:
+            conn.close()
+        except Exception:
+            pass
+

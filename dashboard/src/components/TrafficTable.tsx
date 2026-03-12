@@ -16,6 +16,7 @@ const COLUMN_MAPPING: { key: keyof TrafficData; label: string; width: string }[]
     { key: 'dst_ip', label: 'Dst IP', width: 'min-w-[140px]' },
     { key: 'dst_port', label: 'Dst Port', width: 'min-w-[100px]' },
     { key: 'protocol', label: 'Protocol', width: 'min-w-[100px]' },
+    { key: 'label', label: 'Label', width: 'min-w-[120px]' },
     { key: 'timestamp', label: 'Timestamp', width: 'min-w-[180px]' },
     { key: 'flow_duration', label: 'Flow Duration', width: 'min-w-[120px]' },
     { key: 'total_fwd_packet', label: 'Total Fwd Packet', width: 'min-w-[140px]' },
@@ -93,7 +94,6 @@ const COLUMN_MAPPING: { key: keyof TrafficData; label: string; width: string }[]
     { key: 'idle_std', label: 'Idle Std', width: 'min-w-[110px]' },
     { key: 'idle_max', label: 'Idle Max', width: 'min-w-[110px]' },
     { key: 'idle_min', label: 'Idle Min', width: 'min-w-[110px]' },
-    { key: 'label', label: 'Label', width: 'min-w-[120px]' },
 ];
 
 const TrafficTable: React.FC<TrafficTableProps> = ({ incidentId }) => {

@@ -43,7 +43,6 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedIncidentId, onSelectIncident 
         <aside className="w-96 flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111622] shrink-0 h-full">
             <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center shrink-0">
                 <h3 className="font-bold text-lg dark:text-white">Active Incidents</h3>
-                <span className="bg-red-500/10 text-red-500 text-xs font-bold px-2 py-1 rounded">12 New</span>
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar relative">

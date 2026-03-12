@@ -53,10 +53,7 @@ function App() {
             <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">CyberGuard Dash</h2>
           </div>
           <nav className="flex items-center gap-6">
-            <a className="text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-white text-sm font-medium transition-colors" href="#">Dashboard</a>
-            <a className="text-primary dark:text-white text-sm font-bold border-b-2 border-primary py-1" href="#">Incidents</a>
-            <a className="text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-white text-sm font-medium transition-colors" href="#">Analytics</a>
-            <a className="text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-white text-sm font-medium transition-colors" href="#">Settings</a>
+            
           </nav>
         </div>
         <div className="flex items-center gap-4">

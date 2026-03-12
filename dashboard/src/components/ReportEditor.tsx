@@ -92,7 +92,7 @@ const ReportEditor: React.FC<ReportEditorProps> = ({ incidentId }) => {
                             <button onClick={() => formatText('`')} className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400" title="Code"><span className="material-symbols-outlined text-base">code</span></button>
                         </div>
                     </div>
-                    <button
+                    {/* <button
                         onClick={handleAutoGenerate}
                         disabled={generating}
                         className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded border border-primary/20 text-xs font-bold hover:bg-primary/20 transition-colors disabled:opacity-50"
@@ -101,7 +101,7 @@ const ReportEditor: React.FC<ReportEditorProps> = ({ incidentId }) => {
                             {generating ? "autorenew" : "auto_awesome"}
                         </span>
                         {generating ? "Generating..." : "AI Auto Report"}
-                    </button>
+                    </button> */}
                 </div>
 
                 {/* Main Editor Area */}

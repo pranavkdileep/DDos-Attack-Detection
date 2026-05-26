@@ -16,11 +16,13 @@ CORS(app)
 # ======================
 # Load artifacts
 # ======================
-model = tf.keras.models.load_model("my_model.h5")
-scaler = joblib.load("scaler.pkl")
-label_encoder = joblib.load("label_encoder.pkl")
+MODEL_DIR = os.path.join(os.path.dirname(__file__), "model_test")
 
-with open("feature_columns.json") as f:
+model = tf.keras.models.load_model(os.path.join(MODEL_DIR, "my_model.h5"))
+scaler = joblib.load(os.path.join(MODEL_DIR, "scaler.pkl"))
+label_encoder = joblib.load(os.path.join(MODEL_DIR, "label_encoder.pkl"))
+
+with open(os.path.join(MODEL_DIR, "feature_columns.json")) as f:
     FEATURE_COLUMNS = json.load(f)
 
 # ======================
